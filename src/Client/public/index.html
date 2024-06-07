@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lunr.js test page</title>
+    <script src="https://unpkg.com/lunr/lunr.js"></script>
+    <script type="module">
+
+        import {LitElement, html} from 'https://cdn.jsdelivr.net/gh/lit/dist@3/all/lit-all.min.js';
+
+        export class LunrSearchComponent extends LitElement {
+            static properties = {
+                searchResults: {attribute: false}
+            };
+
+            async fetchSearchData() {
+                const response = await fetch('/search-data.json');
+                const data = await response.json();
+
+                this.index = lunr.Index.load(data.index)
+                this.raw = data.raw;
+            }
+
+            search(query){
+                if(!query) {
+                    this.searchResults = [];
+                    return;
+                }
+
+				if(this.debounceTimer) {
+					clearTimeout(this.debounceTimer);
+				}
+				this.debounceTimer = setTimeout(() => {
+					const results = this.index.search(query);
+					if(!results.length) {
+						this.searchResults = [];
+						return;
+					}
+
+					this.searchResults = results.map((result) => this.raw[result.ref]);
+				}, 200);
+            }
+            
+            constructor() {
+                super();
+            }
+
+            connectedCallback() {
+                super.connectedCallback();
+                this.searchResults = [];
+                this.fetchSearchData();
+            }
+
+            render() {
+                return html`
+                    <input type="search" placeholder="🔎 Start typing to search..." @keyup=${e =>this.search(e.target.value)} />
+                    <ul>
+                    ${this.searchResults.map(result => html`
+                        <li>
+                            <h3><a href="/posts/${result.path}">${result.title}</a></h3>
+                            <p>${result.excerpt}</p>
+                            <ul>
+                                ${result.tags.map(tag => html`<li>${tag}</li>`)}
+                            </ul>
+                        </li>`
+                    )}
+                    </ul>
+                `;
+            }
+        }
+
+        customElements.define('lunr-search-component', LunrSearchComponent);
+    </script>
+</head>
+<body>
+<h1>Lunr.js test page</h1>
+<p>Try queries like <em>lorem</em>, <em>awesome</em> or <em>content</em>.</p>
+<p>You can also use trailing wildcard like <em>com*</em> or <em>a*</em>.</p>
+<lunr-search-component></lunr-search-component>
+</body>
+</html>
