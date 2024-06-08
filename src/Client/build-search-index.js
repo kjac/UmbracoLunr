@@ -6,7 +6,7 @@ dotenv.config();
 
 const response = await fetch(`${process.env.UMBRACO_HOST}/umbraco/delivery/api/v2/content?filter=contentType:post&fields=properties[excerpt,tags]`);
 if (!response.ok) {
-    throw new Error(`The Delivery API API response was not OK: ${response.status}`);
+    throw new Error(`The Delivery API response was not OK: ${response.status}`);
 }
 
 const data = await response.json();
